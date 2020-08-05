@@ -1,0 +1,91 @@
+---
+title: "Regression Models Course Project"
+author: "Pingping"
+date: "8/5/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r package,include=FALSE }
+library(ggplot2)
+library(dplyr)
+```
+
+## Introduction
+
+In this report, we explored the relationship between a set of variables and miles per gallon (MPG) (outcome). We are interested in solving these following two questions:
+
+1. Is an automatic or manual transmission better for MPG
+
+2. Quantify the MPG difference between automatic and manual transmissions
+
+## Data Analysis
+
+```{r mtcars}
+mtcars <- datasets::mtcars
+dim(mtcars)
+```
+
+This dataset has 32 observations and 11 variables. Among the variables, mpg is the outcome, and the others are 10 variables that may or may not influence the mpg. 
+
+## Is an automatic or manual transmission better for MPG?
+```{r am}
+summary(mtcars[mtcars$am == 0, ]$mpg)
+summary(mtcars[mtcars$am == 1, ]$mpg)
+```
+As we can see from the boxplot (in the appendix), automatic cars (am = 0) on average have a  smaller mpg than manual cars (am = 1).
+
+## Quantify the MPG difference between automatic and manual transmissions
+
+1. Simple linear regression model
+
+First, We will do a simple linear regression model fit of the mtcars data using use mpg as the outcome and am as the variable.
+```{r simple lm}
+lm_simple <- lm(mpg ~ factor(am), data=mtcars)
+summary(lm_simple)$coef
+summary(lm_simple)$adj.r.squared
+```
+From the result, We can see that the adjusted R squared value is only 0.338, which means that only 33.8% of the regression variance can be explained by this simple linear model. We may need to take other variables in the mtcars dataset into consideration in the modelling.
+
+2.  Multivariable regression model
+```{r multilm}
+lm_multi <- lm(mpg ~ ., data=mtcars)
+summary(lm_multi)$coef[ ,1]
+summary(lm_multi)$adj.r.squared
+```
+With all the variables taken into account, we got a multivariable linear model, with an adjusted R-squareof 0.8066. This multivariable linear regression model fits better than the single linear model. However, not all the variables contribute to the outcome mpg evenly. Therefore, we'll use anova to tests whether the model terms are significant and try to find a better model to fit the data.
+```{r anova test}
+anova(lm_multi)
+```
+The results suggested that cyl, disp and wt showed significant influence (P value < 0.05) to the modelling. Hence, we'll choose these variables plus the am to fit the model.
+
+```{r finallm}
+mtcars$am <- factor(mtcars$am, labels = c("Automatic", "Manual"))
+lm_final <- lm(mpg~cyl+wt+disp+am, mtcars)
+summary(lm_final)$coef[ ,1]
+```
+
+To examine any heteroskedacity between the fitted and residual values, and to check for any non-normality, we'll plot the residuals (in the appendix). As we can see from the residual fitted graph, the residuals are homosekdastic, and they have similar variance. 
+
+## Conclusion
+
+With all the other same setting, manual transmission cars on average have 0.129 miles per gallon more than automatic cars.
+
+## Appendix
+
+1. Boxplot of automaic and muanual car mpg
+
+```{r automatic or manual}
+mtcars$am <- factor(mtcars$am, labels = c("Automatic", "Manual"))
+boxplot(mpg ~ am, data = mtcars, xlab = "Transmission type")
+```
+
+2. Residual plots
+
+```{r plot residuals}
+par(mfrow = c(2, 2))
+plot(lm_final)
+```
